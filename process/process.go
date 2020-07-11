@@ -16,19 +16,22 @@ type Process struct {}
 // FindProcessByName is responsible to find the the process
 // by name and return the pid. The function will return
 // an error if something occurred.
-func (Process) FindProcessByName(name string) (int32, error) {
+func (Process) FindProcessByName(name string) ([]int32, error) {
+	var results []int32
+
 	// Get all processes
 	pp, err := process.Processes()
 	if err != nil {
-		return 0, fmt.Errorf("failed to get all processes with err: %v", err)
+		return results, fmt.Errorf("failed to get all processes with err: %v", err)
 	}
 	for _, p := range pp {
 		pName, err := p.Name()
 		if err != nil {
-			return 0, fmt.Errorf("failed to get process name with error: %v", err)
+			return results, fmt.Errorf("failed to get process name with error: %v", err)
 		}
 		if pName == name {
-			return p.Pid, nil
+			results := append(results, p.Pid)
+			return results, nil
 		}
 
 		// Get all children processes.
@@ -40,15 +43,16 @@ func (Process) FindProcessByName(name string) (int32, error) {
 		for _, c := range cc {
 			cName, err := c.Name()
 			if err != nil {
-				return 0, fmt.Errorf("failed to get name from child with error: %v", err)
+				return results, fmt.Errorf("failed to get name from child with error: %v", err)
 			}
 			if cName == name {
-				return c.Pid, nil
+				results := append(results, c.Pid)
+				return results, nil
 			}
 		}
 	}
 
-	return 0, nil
+	return results, nil
 }
 
 // KillProcess is responsible to kill a process, the

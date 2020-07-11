@@ -51,14 +51,14 @@ func TestFindPIDByGivenPortNumberShouldFindTheCorrectProcess(t *testing.T) {
 }
 
 func TestFindProcessByNameShouldReturnAProcessForAValidName(t *testing.T) {
-	processName, pid := getProcessPidFromName(t)
+	processName, _ := getProcessPidFromName(t)
 	p := Process{}
 	results, err := p.FindProcessByName(processName)
 	if err != nil {
 		t.Fatalf("expected nil; got err: %v", err)
 	}
-	if results != pid {
-		t.Errorf("expected=%d; got=%d", pid, results)
+	if len(results) == 0 {
+		t.Error("expected to return at least one pid")
 	}
 }
 
@@ -68,8 +68,8 @@ func TestFindProcessByNameShouldReturnZeroForInvalidName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected nil; got err: %v", err)
 	}
-	if results != 0 {
-		t.Errorf("expected=%d; got=%d", 0, results)
+	if len(results) != 0 {
+		t.Errorf("expected to return empty array but got %v", results)
 	}
 }
 

@@ -12,12 +12,8 @@ func TestGetLogFromProcessShouldReturnAnErrorForInvalidPID(t *testing.T) {
 	message := make(chan string, 1)
 	errCh := make(chan error, 1)
 	go l.GetLogFromProcess(999999, message, errCh)
-	mess := <-message
-	if mess != "" {
-		t.Error("expected message to be empty")
-	}
 	err := <- errCh
-	if err == nil {
+	if err.Error() != "EOF" {
 		t.Error("expected error to not be empty")
 	}
 }
@@ -28,9 +24,8 @@ func TestGetLogFromProcessShouldReturnAMessageForAValidPid(t *testing.T) {
 	message := make(chan string, 1)
 	errCh := make(chan error, 1)
 	go l.GetLogFromProcess(os.Getpid(), message, errCh)
-	_ = <-message
 	err := <- errCh
-	if err == nil {
+	if err == nil || err.Error() != "EOF" {
 		t.Errorf("expected error to be empty but got: %v", err)
 	}
 }

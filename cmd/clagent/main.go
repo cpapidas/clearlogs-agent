@@ -5,20 +5,25 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"github.com/cpapidas/clagent"
 	"github.com/cpapidas/clagent/mac"
 	"github.com/cpapidas/clagent/process"
 	"log"
+	"os"
 	"runtime"
 )
 
 func main() {
+	log.Println("Setting up the program flags")
 	// Set up the program flags/parameters
 	token, port, pid := setUpFlags()
 
+	log.Println("Creating the config object")
 	// Create the config file according to program flags
 	conf := setUpConfig(token, port, pid)
 
+	log.Println("Validating the config object")
 	// Validate the config object and see if we have
 	// all the data in order to continue
 	err := validateConfig(conf)
@@ -29,23 +34,15 @@ func main() {
 	// Create a process object, used for the dependency injection
 	pro := process.Process{}
 
-	// Check if we have another clagent process that is already running,
-	// if yes then we need to have only one process up in order to avoid
-	// duplicated data in server. Kill the old process and continue.
-	cpid, err := pro.FindProcessByName(process.AgentName)
+	log.Println("Checking for similar processes")
+	err = killSimilarProcess(pro)
 	if err != nil {
-		log.Fatalf("failed to search for a process by name with error: %v", err)
-	}
-	if cpid != 0 {
-		log.Println("a similar process already is running, killing the old process")
-		err := pro.KillProcess(cpid)
-		if err != nil {
-			log.Fatalf("failed to kill the old process with error: %v", err)
-		}
+		log.Fatalf("failed to kill simalar process with error: %v", err)
 	}
 
 	// According to client operating system return the proper
 	// provider to handle the logs.
+	log.Println("Find the log provider for the current OS")
 	lg, err := findTheLogProvider()
 	if err != nil {
 		log.Fatalf("failed to create log provider with error: %v", err)
@@ -54,6 +51,7 @@ func main() {
 	stop := make(chan bool, 1)
 
 	// Start listen to a specific pid and send the data to the server.
+	log.Println("Staging listening on process logs")
 	err = clagent.ListenToPid(conf, pro, lg, stop)
 	if err != nil {
 		log.Fatalf("application error: %v", err)
@@ -100,8 +98,28 @@ func validateConfig(conf clagent.Config) error {
 func findTheLogProvider() (clagent.Log, error) {
 	switch runtime.GOOS {
 	case "darwin":
-		return mac.Log{}, nil
+		return mac.Log{ShouldUseSudo: true}, nil
 	default:
 		return nil, errors.New("cannot find supported operation system")
 	}
+}
+
+// killSimilarProcess checks if we have another clagent process that is already running,
+// if yes then we need to have only one process up in order to avoid
+// duplicated data in server. Kill the old process and continue.
+func killSimilarProcess(pro process.Process) error {
+	cpids, err := pro.FindProcessByName(process.AgentName)
+	if err != nil {
+		return fmt.Errorf("failed to search for a process by name with error: %v", err)
+	}
+	for _, cpid := range cpids {
+		if cpid != 0 && cpid != int32(os.Getpid()) {
+			log.Println("a similar process already is running, killing the old process")
+			err := pro.KillProcess(cpid)
+			if err != nil {
+				return fmt.Errorf("failed to kill the old process with error: %v", err)
+			}
+		}
+	}
+	return nil
 }

@@ -14,7 +14,7 @@ type Process interface {
 	// FindProcessByName is responsible to find the the process
 	// by name and return the pid. The function will return
 	// an error if something occurred.
-	FindProcessByName(name string) (int32, error)
+	FindProcessByName(name string) ([]int32, error)
 
 	// KillProcess is responsible to kill a process, the
 	// function will return an error if something occurred.
