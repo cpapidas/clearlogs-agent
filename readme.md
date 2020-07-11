@@ -5,3 +5,12 @@
 
 Clearlog Agent is responsible to listen the STOUT and STDERR of the 
 processes and send the logs to a remote server.
+
+# Development Notes
+
+## Test it locally
+ 
+Run the following command in order to build and run the docker image with 
+an example http server
+
+`docker build --rm -t clagent:v1 .`

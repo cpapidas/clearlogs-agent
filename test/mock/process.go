@@ -3,7 +3,7 @@ package mock
 // Process mock implementation of a process.
 type Process struct {
 	FindPIDByGivenPortNumberFnc func(port int32) (int32, error)
-	FindProcessByNameFnc func(name string) (int32, error)
+	FindProcessByNameFnc func(name string) ([]int32, error)
 	KillProcessFnc func(pid int32) error
 }
 
@@ -16,11 +16,11 @@ func (p Process) FindPIDByGivenPortNumber(port int32) (int32, error) {
 }
 
 // FindProcessByName mock implementation
-func (p Process) FindProcessByName(name string) (int32, error) {
+func (p Process) FindProcessByName(name string) ([]int32, error) {
 	if p.FindProcessByNameFnc != nil {
 		return p.FindProcessByNameFnc(name)
 	}
-	return 0, nil
+	return []int32{}, nil
 }
 
 // KillProcess mock implementation
