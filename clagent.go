@@ -46,7 +46,7 @@ type Config struct {
 
 // ListenToPid function is responsible to find the pid and listen
 // for logs. The function will send the log to the service by
-// the given implementation (tcp sockets).
+// the given implementation (net sockets).
 //
 // If for some reason the pid in the config file is null the
 // program will try to find the pid by the given port.
