@@ -32,6 +32,18 @@ type Log interface {
 	GetLogFromProcess(processPID int, message chan<- string, errChan chan<- error)
 }
 
+// TCP describe the actions over TCP connection.
+type TCP interface {
+	// Connect function is responsible to set up the TCP connection
+	// with the server. It gets the server address (e.g. localhost:3000)
+	// as a string and will return an error if something occurred.
+	Connect(address string) error
+
+	// Send is responsible to send a message to the client. It gets the
+	// message as a string and in any case it returns an error.
+	Send(message string) error
+}
+
 // Config describe all the properties for the program.
 //
 // Token describe the server token in order to send the data
@@ -55,6 +67,7 @@ func ListenToPid(
 	proc Process,
 	lg Log,
 	stop <-chan bool,
+	tcpc TCP,
 ) error {
 	pid, err := getPid(conf, proc)
 	if err != nil {
@@ -70,8 +83,11 @@ func ListenToPid(
 	for {
 		select {
 		case mess := <-message:
-			_ = mess
-			fmt.Println(mess)
+			log.Printf("message: %v", message)
+			err := tcpc.Send(mess)
+			if err != nil {
+				log.Printf("error on send data: %v", err)
+			}
 		case errc := <-errChan:
 			log.Printf("error on reading messages, error: %v", errc)
 		case <-stop:

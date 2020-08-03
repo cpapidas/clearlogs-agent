@@ -3,12 +3,36 @@ package net
 import (
 	"fmt"
 	"net"
+	"net/http"
+	"os"
+	"time"
 )
 
 // TCP is responsible to describe the tcp client in order
 // to send data to the external server.
 type TCPClient struct {
 	Conn net.Conn
+}
+
+// NewTCPClient is responsible to crate a new TCPClient object. If something
+// occurred the function will return an error.
+func NewTCPClient(token string) (*TCPClient, error) {
+	url := os.Getenv("CL_BASEURL")
+	if url == "" {
+		url = ""
+	}
+	httpClient := NewHTTPClient(url, &http.Client{Timeout: 5 * time.Second})
+	addres, err := httpClient.GetTCPAddress(token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get TCP address with error: %v", err)
+	}
+	tcpc := TCPClient{}
+	err = tcpc.Connect(addres)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect with error: %v", err)
+	}
+
+	return &tcpc, nil
 }
 
 // Connect function is responsible to set up the TCP connection

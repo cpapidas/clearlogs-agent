@@ -23,7 +23,7 @@ func TestListenToPidShouldNotReturnAnyErrorForValidPort(t *testing.T) {
 		time.Sleep(500 * time.Millisecond)
 		stop <- true
 	}()
-	err := clagent.ListenToPid(conf, proc, l, stop)
+	err := clagent.ListenToPid(conf, proc, l, stop, &mock.MockTCPClient{})
 	if err != nil {
 		t.Fatal("expected error not to nil")
 	}
@@ -38,7 +38,7 @@ func TestListenToPidShouldNotReturnAnyErrorForValidPid(t *testing.T) {
 	proc := mock.Process{}
 	l := mock.Log{}
 	stop <- true
-	err := clagent.ListenToPid(conf, proc, l, stop)
+	err := clagent.ListenToPid(conf, proc, l, stop, &mock.MockTCPClient{})
 	if err != nil {
 		t.Fatal("expected error not to nil")
 	}
@@ -56,7 +56,7 @@ func TestListenToPidShouldReturnAnErrorForInvalidPID(t *testing.T) {
 		},
 	}
 	l := mock.Log{}
-	err := clagent.ListenToPid(conf, proc, l, stop)
+	err := clagent.ListenToPid(conf, proc, l, stop, &mock.MockTCPClient{})
 	if err == nil {
 		t.Fatal("expected error not to be nil")
 	}

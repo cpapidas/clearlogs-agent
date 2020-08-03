@@ -9,6 +9,7 @@ import (
 	"github.com/cpapidas/clagent"
 	"github.com/cpapidas/clagent/linux"
 	"github.com/cpapidas/clagent/mac"
+	"github.com/cpapidas/clagent/net"
 	"github.com/cpapidas/clagent/process"
 	"log"
 	"os"
@@ -51,9 +52,14 @@ func main() {
 
 	stop := make(chan bool, 1)
 
+	tcpc, err := net.NewTCPClient(conf.Token)
+	if err != nil {
+		log.Fatalf("failed to create tcp client with error: %v", err)
+	}
+
 	// Start listen to a specific pid and send the data to the server.
 	log.Println("Listening for process logs")
-	err = clagent.ListenToPid(conf, pro, lg, stop)
+	err = clagent.ListenToPid(conf, pro, lg, stop, tcpc)
 	if err != nil {
 		log.Fatalf("application error: %v", err)
 	}
