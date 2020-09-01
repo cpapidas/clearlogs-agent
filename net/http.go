@@ -1,10 +1,9 @@
 package net
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 // HTTPClient describe the http client actions.
@@ -39,32 +38,18 @@ type TCPAddressResponse struct {
 	Address string `json:"address"`
 }
 
-// GetTCPAddress is responsible to send an HTTP request
-// in order to get the TCP address connection.
-func (h HTTPClient) GetTCPAddress(token string) (string, error) {
-	req, err := http.NewRequest("GET", h.BaseURL+"/tcp/connection", nil)
+// SendLogs is responsible to send an HTTP request in order to send the logs.
+func (h HTTPClient) SendLogs(token, log string) error {
+	payload := strings.NewReader(log)
+
+	req, err := http.NewRequest("POST", h.BaseURL+"/webhook/log/"+token, payload)
 	if err != nil {
-		return "", fmt.Errorf("failed to create http request error: %v", err)
+		return fmt.Errorf("failed to create http request error: %v", err)
 	}
-
-	req.Header.Add("Authorization", "Bearer "+token)
-
-	resp, err := h.Http.Do(req)
+	_, err = h.Http.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed on request with error: %v", err)
-	}
-	defer resp.Body.Close()
-
-	body, readErr := ioutil.ReadAll(resp.Body)
-	if readErr != nil {
-		return "", fmt.Errorf("faield to read the body with error: %v", err)
+		return fmt.Errorf("failed on request with error: %v", err)
 	}
 
-	var tcpAddress TCPAddressResponse
-	err = json.Unmarshal(body, &tcpAddress)
-	if err != nil {
-		return "", fmt.Errorf("faield to unmarshal the body with error: %v", err)
-	}
-
-	return tcpAddress.Address, nil
+	return nil
 }

@@ -3,6 +3,7 @@ package clagent
 import (
 	"fmt"
 	"log"
+	"time"
 )
 
 // Process describes the process handler
@@ -32,16 +33,9 @@ type Log interface {
 	GetLogFromProcess(processPID int, message chan<- string, errChan chan<- error)
 }
 
-// TCP describe the actions over TCP connection.
-type TCP interface {
-	// Connect function is responsible to set up the TCP connection
-	// with the server. It gets the server address (e.g. localhost:3000)
-	// as a string and will return an error if something occurred.
-	Connect(address string) error
-
-	// Send is responsible to send a message to the client. It gets the
-	// message as a string and in any case it returns an error.
-	Send(message string) error
+// HTTPClient describe the actions over HTTP connection.
+type HTTPClient interface {
+	SendLogs(token, log string) error
 }
 
 // Config describe all the properties for the program.
@@ -67,12 +61,16 @@ func ListenToPid(
 	proc Process,
 	lg Log,
 	stop <-chan bool,
-	tcpc TCP,
+	httpClient HTTPClient,
+	token string,
 ) error {
 	pid, err := getPid(conf, proc)
 	if err != nil {
 		return err
 	}
+
+	log.Printf("find the process with pid: %d", pid)
+
 	message := make(chan string)
 	errChan := make(chan error)
 
@@ -81,16 +79,19 @@ func ListenToPid(
 	// we need an infinity loop in order to stay connected and get all
 	// the messages from the process.
 	for {
+		time.Sleep(1 * time.Second)
+		log.Println("Checking for a message")
 		select {
 		case mess := <-message:
 			log.Printf("message: %v", message)
-			err := tcpc.Send(mess)
+			err := httpClient.SendLogs(token, mess)
 			if err != nil {
 				log.Printf("error on send data: %v", err)
 			}
 		case errc := <-errChan:
 			log.Printf("error on reading messages, error: %v", errc)
 		case <-stop:
+			log.Println("stop the process")
 			return nil
 		}
 	}
