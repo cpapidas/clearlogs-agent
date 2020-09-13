@@ -2,6 +2,7 @@ package mac
 
 import (
 	"os"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -11,7 +12,7 @@ func TestGetLogFromProcessShouldReturnAnErrorForInvalidPID(t *testing.T) {
 	l := Log{}
 	message := make(chan string, 1)
 	errCh := make(chan error, 1)
-	go l.GetLogFromProcess(999999, message, errCh)
+	go l.GetLogFromProcess("999999", message, errCh)
 	err := <- errCh
 	if err.Error() != "EOF" {
 		t.Error("expected error to not be empty")
@@ -23,7 +24,7 @@ func TestGetLogFromProcessShouldReturnAMessageForAValidPid(t *testing.T) {
 	l := Log{}
 	message := make(chan string, 1)
 	errCh := make(chan error, 1)
-	go l.GetLogFromProcess(os.Getpid(), message, errCh)
+	go l.GetLogFromProcess(strconv.Itoa(os.Getpid()), message, errCh)
 	err := <- errCh
 	if err == nil || err.Error() != "EOF" {
 		t.Errorf("expected error to be empty but got: %v", err)

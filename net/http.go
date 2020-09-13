@@ -42,7 +42,7 @@ type TCPAddressResponse struct {
 func (h HTTPClient) SendLogs(token, log string) error {
 	payload := strings.NewReader(log)
 
-	req, err := http.NewRequest("POST", h.BaseURL+"/webhook/log/"+token, payload)
+	req, err := http.NewRequest("POST", h.BaseURL+"/webhooks/log/"+token, payload)
 	if err != nil {
 		return fmt.Errorf("failed to create http request error: %v", err)
 	}

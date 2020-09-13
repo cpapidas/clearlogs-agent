@@ -19,7 +19,7 @@ func TestGetLogFromProcessShouldReturnAMessageForAValidPid(t *testing.T) {
 	l := Log{StdErr: stdErrPath, StdOut: stdOutPath}
 	message := make(chan string, 1)
 	errCh := make(chan error, 1)
-	go l.GetLogFromProcess(123, message, errCh)
+	go l.GetLogFromProcess("123", message, errCh)
 	mess := <- message
 	if mess != "test write \n" {
 		t.Errorf("expected message to be: %s but got: %s", expectedMessage, mess)
@@ -35,7 +35,7 @@ func TestGetLogFromProcessShouldReturnAnErrorForInvalidFilePath(t *testing.T) {
 	l := Log{StdErr: stdErrPath, StdOut: stdOutPath}
 	message := make(chan string, 1)
 	errCh := make(chan error, 1)
-	go l.GetLogFromProcess(999999, message, errCh)
+	go l.GetLogFromProcess("999999", message, errCh)
 	err := <- errCh
 	if err == nil {
 		t.Errorf("expected error to be nil but got: %v", err)

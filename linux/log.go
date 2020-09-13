@@ -22,9 +22,9 @@ type Log struct {
 //
 // This is a linux implementation, the function will open the std named pipe and
 // read all the content from there.
-func (l Log) GetLogFromProcess(processPID int, message chan <-string, errChan chan <-error) {
-	stdErr := fmt.Sprintf("/proc/%d/fd/1", processPID)
-	stdOut := fmt.Sprintf("/proc/%d/fd/2", processPID)
+func (l Log) GetLogFromProcess(processPID string, message chan <-string, errChan chan <-error) {
+	stdErr := fmt.Sprintf("/proc/%s/fd/1", processPID)
+	stdOut := fmt.Sprintf("/proc/%s/fd/2", processPID)
 
 	if l.StdErr != "" {
 		stdErr = l.StdErr

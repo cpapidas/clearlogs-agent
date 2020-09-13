@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os/exec"
-	"strconv"
 )
 
 // Log is responsible to describe the log actions we do
@@ -20,16 +19,16 @@ type Log struct {
 //
 // This is a mac implementation so, we are using dtrace command in order to
 // have access to process logs.
-func (l Log) GetLogFromProcess(processPID int, message chan <-string, errChan chan <-error) {
+func (l Log) GetLogFromProcess(processPID string, message chan <-string, errChan chan <-error) {
 	var cmd *exec.Cmd
 	if l.ShouldUseSudo {
 		cmd = exec.Command(  "sudo", "dtrace",
-			"-p", strconv.Itoa(processPID),
+			"-p", processPID,
 			"-qn", "syscall::write*:entry /pid == $target && arg0 == 1/ { printf(\"%s\", copyinstr(arg1, arg2));}",
 		)
 	} else {
 		cmd = exec.Command(  "dtrace",
-			"-p", strconv.Itoa(processPID),
+			"-p", processPID,
 			"-qn", "syscall::write*:entry /pid == $target && arg0 == 1/ { printf(\"%s\", copyinstr(arg1, arg2));}",
 		)
 	}

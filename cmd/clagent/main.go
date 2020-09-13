@@ -21,11 +21,11 @@ import (
 func main() {
 	log.Println("Setting up the program flags")
 	// Set up the program flags/parameters
-	token, port, pid := setUpFlags()
+	token, port, pid, ignoreKillSimilarProcess, baseUrl, useUDP := setUpFlags()
 
 	log.Println("Creating the config object")
 	// Create the config file according to program flags
-	conf := setUpConfig(token, port, pid)
+	conf := setUpConfig(token, port, pid, baseUrl, useUDP)
 
 	log.Println("Validating the config object")
 	// Validate the config object and see if we have
@@ -38,23 +38,29 @@ func main() {
 	// Create a process object, used for the dependency injection
 	pro := process.Process{}
 
-	log.Println("Checking for similar processes")
-	err = killSimilarProcess(pro)
-	if err != nil {
-		log.Fatalf("failed to kill simalar process with error: %v", err)
+	if *ignoreKillSimilarProcess {
+		log.Println("Checking for similar processes")
+		err = killSimilarProcess(pro)
+		if err != nil {
+			log.Fatalf("failed to kill simalar process with error: %v", err)
+		}
 	}
 
 	// According to client operating system return the proper
 	// provider to handle the logs.
 	log.Println("Find the log provider for the current OS")
-	lg, err := findTheLogProvider()
+	lg, err := findTheLogProvider(conf)
 	if err != nil {
 		log.Fatalf("failed to create log provider with error: %v", err)
 	}
 
 	stop := make(chan bool, 1)
 
-	httpclient := net.NewHTTPClient("", &http.Client{Timeout: 5 * time.Second})
+	url := conf.BaseUrl
+	if conf.BaseUrl == "" {
+		url = "https://elefad.com"
+	}
+	httpclient := net.NewHTTPClient(url, &http.Client{Timeout: 5 * time.Second})
 
 	// Start listen to a specific pid and send the data to the server.
 	log.Println("Listening for process logs")
@@ -65,23 +71,29 @@ func main() {
 }
 
 // setUpFlags is responsible to setup the flags
-func setUpFlags() (*string, *int, *int) {
+func setUpFlags() (*string, *int, *int, *bool, *string, *bool) {
 	token := flag.String("token", "", "The client token")
+	useUDP := flag.Bool("udp", false, "Use UDP connection")
 	port := flag.Int("port", 0, "The process port")
 	pid := flag.Int("pid", 0, "The process pid")
+	baseUrl := flag.String("baseUrl", "", "log destination base url")
+	ignoreKillSimilarProcess := flag.Bool("ignoreKillSimilarProcess", false, "ignore kill similar process")
 
 	flag.Parse()
 
-	return token, port, pid
+	return token, port, pid, ignoreKillSimilarProcess, baseUrl, useUDP
 }
 
 // setUpConfig is responsible to setup and return a domain Config object,
 // with the given program parameters
-func setUpConfig(token *string, port, pid *int) clagent.Config {
+func setUpConfig(token *string, port, pid *int, baseUrl *string, useUDP *bool) clagent.Config {
 	return clagent.Config{
 		Token: *token,
 		Pid:   int32(*pid),
 		Port:  int32(*port),
+		BaseUrl: *baseUrl,
+		UseUDP: *useUDP,
+		UDPAddress: ":3875",
 	}
 }
 
@@ -92,8 +104,8 @@ func validateConfig(conf clagent.Config) error {
 	if conf.Token == "" {
 		return errors.New("missing the Token property from config file")
 	}
-	if conf.Port == 0 && conf.Pid == 0 {
-		return errors.New("port or pid should present in config file, both are missing")
+	if conf.Port == 0 && conf.Pid == 0 && !conf.UseUDP {
+		return errors.New("logFile, port or pid should present in config file, both are missing")
 	}
 	return nil
 }
@@ -101,7 +113,10 @@ func validateConfig(conf clagent.Config) error {
 // findTheLogProvider according to the user's system this function
 // is responsible to find the proper implementation in order to manage
 // the logs.
-func findTheLogProvider() (clagent.Log, error) {
+func findTheLogProvider(conf clagent.Config) (clagent.Log, error) {
+	if conf.UseUDP {
+		return net.NewUDP(conf.UDPAddress)
+	}
 	switch runtime.GOOS {
 	case "darwin":
 		return mac.Log{ShouldUseSudo: true}, nil
